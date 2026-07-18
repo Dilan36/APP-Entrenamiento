@@ -180,16 +180,50 @@ input:focus, select:focus, textarea:focus {
 .tabbar a {
   flex: 1;
   text-align: center;
-  padding: 12px 4px 10px;
+  padding: 11px 4px 9px;
   text-decoration: none;
   color: var(--text-dim);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10.5px;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
 }
-.tabbar a .icon { display: block; font-size: 20px; margin-bottom: 2px; }
+.tabbar a svg {
+  display: block;
+  margin: 0 auto 3px;
+  width: 21px;
+  height: 21px;
+  stroke: currentColor;
+}
 .tabbar a.active { color: var(--accent); }
+
+/* Iconos genéricos inline (reemplazan emoticones) */
+.icon-inline {
+  display: inline-block;
+  vertical-align: -6px;
+  stroke: currentColor;
+  fill: none;
+  margin-right: 6px;
+}
+.empty-state svg {
+  width: 34px;
+  height: 34px;
+  stroke: var(--text-dim);
+  fill: none;
+  margin-bottom: 10px;
+}
+
+/* Spinner de carga */
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid var(--line-solid);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  margin: 0 auto 12px;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Buttons */
 .btn {
@@ -340,3 +374,96 @@ input:focus, select:focus, textarea:focus {
 }
 
 canvas#chart { width: 100%; }
+
+/* Calendario */
+.cal-card { background: var(--bg-elev); border: 1px solid var(--line-solid); border-radius: var(--radius); padding: 14px; margin-bottom: 14px; }
+.cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.cal-header .mes { font-family: var(--font-display); font-size: 16px; text-transform: capitalize; }
+.cal-nav-btn {
+  background: var(--bg-elev-2);
+  border: 1px solid var(--line-solid);
+  color: var(--text);
+  border-radius: 8px;
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.cal-dow { font-family: var(--font-mono); font-size: 9.5px; color: var(--text-dim); text-align: center; text-transform: uppercase; padding-bottom: 4px; }
+.cal-day {
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text-dim);
+  background: var(--bg-elev-2);
+  cursor: default;
+  position: relative;
+}
+.cal-day.empty { visibility: hidden; }
+.cal-day.trained { background: var(--accent); color: #10120f; font-weight: 700; cursor: pointer; }
+.cal-day.today { box-shadow: 0 0 0 1.5px var(--text-dim) inset; }
+.cal-day.trained.today { box-shadow: 0 0 0 1.5px var(--bg) inset; }
+.cal-legend { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); }
+.cal-legend .dot { width: 9px; height: 9px; border-radius: 3px; background: var(--accent); }
+
+/* Rutina semanal */
+.day-card { background: var(--bg-elev); border: 1px solid var(--line-solid); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+.day-card.rest { opacity: 0.6; }
+.day-card .day-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+.day-card .day-name { font-family: var(--font-display); font-size: 15px; min-width: 78px; }
+.day-card input.grupo-input { flex: 1; }
+.rest-toggle { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-dim); white-space: nowrap; }
+.rest-toggle input { width: 15px; height: 15px; accent-color: var(--accent); }
+
+.plan-ex-row { display: grid; grid-template-columns: 1fr 46px 56px 20px; gap: 6px; align-items: center; margin-bottom: 6px; }
+.plan-ex-row .plan-name { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plan-ex-row input { padding: 8px 6px; font-size: 13px; text-align: center; }
+.plan-ex-row .rm { text-align: center; color: var(--text-dim); cursor: pointer; }
+
+.mini-search { margin-top: 8px; display: none; }
+.mini-search.open { display: block; }
+.mini-search input { margin-bottom: 6px; }
+.mini-results .ex-card { padding: 7px; }
+.mini-results .ex-card img { width: 40px; height: 40px; }
+.mini-results .ex-card .name { font-size: 13px; }
+
+.add-ex-btn {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent);
+  background: none;
+  border: 1px dashed var(--accent);
+  border-radius: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 6px;
+}
+
+/* Banner "hoy toca" */
+.banner-hoy {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+  color: #10120f;
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.banner-hoy .txt { flex: 1; }
+.banner-hoy .eyebrow-b { font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; opacity: 0.7; }
+.banner-hoy .grupo-b { font-family: var(--font-display); font-weight: 700; font-size: 17px; }
+.banner-hoy button {
+  background: #10120f;
+  color: var(--accent);
+  border: none;
+  border-radius: 9px;
+  padding: 9px 12px;
+  font-weight: 700;
+  font-size: 12.5px;
+  cursor: pointer;
+  white-space: nowrap;
+}

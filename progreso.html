@@ -18,6 +18,23 @@
 </div>
 
 <div class="container">
+  <div class="cal-card">
+    <div class="cal-header">
+      <div class="cal-nav-btn" id="cal-prev">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </div>
+      <div class="mes" id="cal-mes">-</div>
+      <div class="cal-nav-btn" id="cal-next">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+    </div>
+    <div class="cal-grid" id="cal-dow"></div>
+    <div class="cal-grid" id="cal-grid" style="margin-top:5px;"></div>
+    <div class="cal-legend"><span class="dot"></span> Día con sesión registrada</div>
+  </div>
+
+  <div id="cal-detalle"></div>
+
   <div class="search-row">
     <select id="select-ejercicio"><option value="">Selecciona un ejercicio...</option></select>
   </div>
@@ -50,41 +67,58 @@
   </div>
 
   <div class="empty-state" id="cargando">
-    <div class="big">⏳</div>
+    <div class="spinner"></div>
     Cargando historial desde tu hoja...
   </div>
 </div>
 
 <nav class="tabbar">
-  <a href="index.html"><span class="icon">📚</span>Biblioteca</a>
-  <a href="registro.html"><span class="icon">📝</span>Registrar</a>
-  <a href="progreso.html" class="active"><span class="icon">📈</span>Progreso</a>
+  <a href="index.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.2C4 4.4 4.6 3.8 5.4 3.8H11a1.6 1.6 0 0 1 1.6 1.6v14.8a1.8 1.8 0 0 0-1.8-1.8H4V5.2Z"/><path d="M20 5.2c0-.8-.6-1.4-1.4-1.4H13a1.6 1.6 0 0 0-1.6 1.6v14.8A1.8 1.8 0 0 1 13.2 18.4H20V5.2Z"/></svg>
+    Biblioteca
+  </a>
+  <a href="rutina.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.3"/><path d="M3.5 9.5h17"/><path d="M8 3v3.2M16 3v3.2"/><path d="M7.5 13.2h3M7.5 16.5h3M13.5 13.2h3"/></svg>
+    Rutina
+  </a>
+  <a href="registro.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.2" width="14" height="16.8" rx="2.2"/><path d="M9 4.2v-.6A1.6 1.6 0 0 1 10.6 2h2.8A1.6 1.6 0 0 1 15 3.6v.6"/><path d="M12 10.5v6M9 13.5h6"/></svg>
+    Registrar
+  </a>
+  <a href="progreso.html" class="active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3.5v15.8c0 .66.54 1.2 1.2 1.2H20.5"/><path d="M7 16l3.6-4.2 3 2.6L18.5 8.4"/></svg>
+    Progreso
+  </a>
 </nav>
 
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
+<script src="js/translations.js"></script>
 <script>
 let historial = []; // filas: {fecha, ejercicio, serie, reps, peso}
 let porEjercicio = {};
+let mesActual = new Date();
+mesActual.setDate(1);
 
 async function iniciar() {
   const cargando = document.getElementById("cargando");
   if (!apiConfigured()) {
-    cargando.innerHTML = '<div class="big">⚙️</div>Falta configurar la URL de tu Apps Script en js/config.js';
+    cargando.innerHTML = 'Falta configurar la URL de tu Apps Script en <code>js/config.js</code>';
     return;
   }
   try {
     const data = await apiGet("historial");
     historial = data.filas || [];
+    dibujarCalendario();
     if (!historial.length) {
-      cargando.innerHTML = '<div class="big">📭</div>Aún no hay sesiones guardadas. Ve a "Registrar" para empezar.';
+      cargando.innerHTML = 'Aún no hay sesiones guardadas. Ve a "Registrar" para empezar.';
       return;
     }
     agrupar();
     poblarSelect();
     cargando.style.display = "none";
   } catch (err) {
-    cargando.innerHTML = '<div class="big">⚠️</div>No se pudo cargar el historial: ' + err.message;
+    cargando.innerHTML = 'No se pudo cargar el historial: ' + err.message;
   }
 }
 
@@ -95,6 +129,75 @@ function agrupar() {
     porEjercicio[f.ejercicio].push(f);
   });
 }
+
+// --- Calendario ---
+const DOW_LABELS = ["L", "M", "X", "J", "V", "S", "D"];
+
+function fechasEntrenadasSet() {
+  return new Set(historial.map(f => f.fecha)); // "YYYY-MM-DD"
+}
+
+function dibujarCalendario() {
+  const dowBox = document.getElementById("cal-dow");
+  dowBox.innerHTML = DOW_LABELS.map(d => `<div class="cal-dow">${d}</div>`).join("");
+
+  document.getElementById("cal-mes").textContent =
+    mesActual.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+
+  const year = mesActual.getFullYear();
+  const month = mesActual.getMonth();
+  const primerDiaSemana = (new Date(year, month, 1).getDay() + 6) % 7; // 0=lunes
+  const diasEnMes = new Date(year, month + 1, 0).getDate();
+  const entrenados = fechasEntrenadasSet();
+  const hoyStr = new Date().toISOString().slice(0, 10);
+
+  const celdas = [];
+  for (let i = 0; i < primerDiaSemana; i++) celdas.push(`<div class="cal-day empty"></div>`);
+  for (let d = 1; d <= diasEnMes; d++) {
+    const fechaStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    const entrenado = entrenados.has(fechaStr);
+    const esHoy = fechaStr === hoyStr;
+    celdas.push(`<div class="cal-day ${entrenado ? "trained" : ""} ${esHoy ? "today" : ""}" data-fecha="${fechaStr}">${d}</div>`);
+  }
+  document.getElementById("cal-grid").innerHTML = celdas.join("");
+
+  document.querySelectorAll(".cal-day.trained").forEach(el => {
+    el.addEventListener("click", () => mostrarDetalleDia(el.dataset.fecha));
+  });
+}
+
+function mostrarDetalleDia(fechaStr) {
+  const filas = historial.filter(f => f.fecha === fechaStr);
+  const porEjercicioDia = {};
+  filas.forEach(f => {
+    if (!porEjercicioDia[f.ejercicio]) porEjercicioDia[f.ejercicio] = [];
+    porEjercicioDia[f.ejercicio].push(f);
+  });
+  const fechaLegible = new Date(fechaStr).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+
+  document.getElementById("cal-detalle").innerHTML = `
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">${fechaLegible}</div>
+      ${Object.entries(porEjercicioDia).map(([nombre, sets]) => `
+        <div class="session-ex">
+          <span>${nombre}</span>
+          <span style="font-family:var(--font-mono); font-size:13px; color:var(--text-dim);">
+            ${sets.map(s => `${s.reps}×${s.peso}kg`).join(" · ")}
+          </span>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+document.getElementById("cal-prev").addEventListener("click", () => {
+  mesActual.setMonth(mesActual.getMonth() - 1);
+  dibujarCalendario();
+});
+document.getElementById("cal-next").addEventListener("click", () => {
+  mesActual.setMonth(mesActual.getMonth() + 1);
+  dibujarCalendario();
+});
 
 function poblarSelect() {
   const sel = document.getElementById("select-ejercicio");

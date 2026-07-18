@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Rutina — Mi Entrenamiento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="topbar">
+  <div class="container">
+    <div class="eyebrow">Rutina</div>
+    <h1>Mi semana</h1>
+  </div>
+</div>
+
+<div class="container">
+  <p style="color:var(--text-dim); font-size:13.5px; margin: 0 0 16px; line-height:1.5;">
+    Define qué te toca cada día. Se guarda solo en este celular y aparecerá como sugerencia en "Registrar".
+  </p>
+  <div id="dias-lista"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<nav class="tabbar">
+  <a href="index.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.2C4 4.4 4.6 3.8 5.4 3.8H11a1.6 1.6 0 0 1 1.6 1.6v14.8a1.8 1.8 0 0 0-1.8-1.8H4V5.2Z"/><path d="M20 5.2c0-.8-.6-1.4-1.4-1.4H13a1.6 1.6 0 0 0-1.6 1.6v14.8A1.8 1.8 0 0 1 13.2 18.4H20V5.2Z"/></svg>
+    Biblioteca
+  </a>
+  <a href="rutina.html" class="active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.3"/><path d="M3.5 9.5h17"/><path d="M8 3v3.2M16 3v3.2"/><path d="M7.5 13.2h3M7.5 16.5h3M13.5 13.2h3"/></svg>
+    Rutina
+  </a>
+  <a href="registro.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.2" width="14" height="16.8" rx="2.2"/><path d="M9 4.2v-.6A1.6 1.6 0 0 1 10.6 2h2.8A1.6 1.6 0 0 1 15 3.6v.6"/><path d="M12 10.5v6M9 13.5h6"/></svg>
+    Registrar
+  </a>
+  <a href="progreso.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3.5v15.8c0 .66.54 1.2 1.2 1.2H20.5"/><path d="M7 16l3.6-4.2 3 2.6L18.5 8.4"/></svg>
+    Progreso
+  </a>
+</nav>
+
+<script src="js/config.js"></script>
+<script src="js/translations.js"></script>
+<script>
+let ALL = [];
+let rutina = cargarRutina();
+let busquedaAbiertaEn = null; // key del día con el buscador abierto
+
+function normaliza(s) {
+  return (s || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+async function iniciar() {
+  const res = await fetch("data/exercises_es.json");
+  ALL = await res.json();
+  DIAS_SEMANA.forEach(d => {
+    if (!rutina[d.key]) rutina[d.key] = { grupo: "", descanso: false, ejercicios: [] };
+  });
+  render();
+}
+
+function render() {
+  const cont = document.getElementById("dias-lista");
+  cont.innerHTML = DIAS_SEMANA.map(d => {
+    const info = rutina[d.key];
+    const esBusquedaAqui = busquedaAbiertaEn === d.key;
+    return `
+    <div class="day-card ${info.descanso ? "rest" : ""}" data-day="${d.key}">
+      <div class="day-head">
+        <div class="day-name">${d.label}</div>
+        <input type="text" class="grupo-input" placeholder="ej. Espalda, Pierna..." value="${info.grupo}" data-field="grupo" ${info.descanso ? "disabled" : ""} />
+        <label class="rest-toggle">
+          <input type="checkbox" data-field="descanso" ${info.descanso ? "checked" : ""} /> Descanso
+        </label>
+      </div>
+
+      ${info.descanso ? "" : `
+        <div class="plan-ex-list">
+          ${info.ejercicios.map((ex, i) => `
+            <div class="plan-ex-row" data-idx="${i}">
+              <div class="plan-name">${ex.name}</div>
+              <input type="number" placeholder="series" value="${ex.series || ""}" data-field="series" />
+              <input type="text" placeholder="reps" value="${ex.reps || ""}" data-field="reps" />
+              <div class="rm" data-action="quitar">✕</div>
+            </div>
+          `).join("")}
+        </div>
+        <button class="add-ex-btn" data-action="toggle-buscar">+ Agregar ejercicio</button>
+        <div class="mini-search ${esBusquedaAqui ? "open" : ""}">
+          <input type="text" placeholder="Buscar ejercicio..." data-action="buscar-input" />
+          <div class="ex-list mini-results" data-action="resultados"></div>
+        </div>
+      `}
+    </div>
+  `;
+  }).join("");
+
+  // listeners por tarjeta de día
+  cont.querySelectorAll(".day-card").forEach(card => {
+    const key = card.dataset.day;
+
+    card.querySelector('[data-field="grupo"]').addEventListener("input", e => {
+      rutina[key].grupo = e.target.value;
+      guardarRutina(rutina);
+    });
+
+    card.querySelector('[data-field="descanso"]').addEventListener("change", e => {
+      rutina[key].descanso = e.target.checked;
+      guardarRutina(rutina);
+      render();
+    });
+
+    const btnBuscar = card.querySelector('[data-action="toggle-buscar"]');
+    if (btnBuscar) {
+      btnBuscar.addEventListener("click", () => {
+        busquedaAbiertaEn = busquedaAbiertaEn === key ? null : key;
+        render();
+        if (busquedaAbiertaEn === key) {
+          card.querySelector('[data-action="buscar-input"]')?.focus();
+        }
+      });
+    }
+
+    const inputBuscar = card.querySelector('[data-action="buscar-input"]');
+    if (inputBuscar) {
+      inputBuscar.addEventListener("input", () => {
+        const q = normaliza(inputBuscar.value);
+        const resBox = card.querySelector('[data-action="resultados"]');
+        if (!q) { resBox.innerHTML = ""; return; }
+        const encontrados = ALL.filter(e => normaliza(e.name).includes(q)).slice(0, 6);
+        resBox.innerHTML = encontrados.map(e => `
+          <div class="ex-card" data-id="${e.id}">
+            <img src="${e.image_url}" loading="lazy" alt="" />
+            <div class="info">
+              <div class="name">${e.name}</div>
+              <div class="meta">${tCategoria(e.category)} · ${tEquipo(e.equipment)}</div>
+            </div>
+          </div>
+        `).join("");
+        resBox.querySelectorAll(".ex-card").forEach(elCard => {
+          elCard.addEventListener("click", () => {
+            const ex = ALL.find(x => x.id === elCard.dataset.id);
+            if (!ex) return;
+            if (!rutina[key].ejercicios.find(x => x.id === ex.id)) {
+              rutina[key].ejercicios.push({ id: ex.id, name: ex.name, series: 4, reps: "10" });
+              guardarRutina(rutina);
+            }
+            busquedaAbiertaEn = null;
+            render();
+            mostrarToast("Agregado a " + DIAS_SEMANA.find(d => d.key === key).label);
+          });
+        });
+      });
+    }
+
+    card.querySelectorAll(".plan-ex-row").forEach(row => {
+      const idx = Number(row.dataset.idx);
+      row.querySelectorAll("input").forEach(inp => {
+        inp.addEventListener("input", () => {
+          rutina[key].ejercicios[idx][inp.dataset.field] = inp.value;
+          guardarRutina(rutina);
+        });
+      });
+      row.querySelector('[data-action="quitar"]').addEventListener("click", () => {
+        rutina[key].ejercicios.splice(idx, 1);
+        guardarRutina(rutina);
+        render();
+      });
+    });
+  });
+}
+
+function mostrarToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 1600);
+}
+
+iniciar();
+</script>
+</body>
+</html>

@@ -26,7 +26,7 @@
 
   <div class="ex-list" id="ex-list"></div>
   <div class="empty-state" id="empty" style="display:none;">
-    <div class="big">🔍</div>
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8"/></svg>
     Sin resultados. Prueba con otro filtro o búsqueda.
   </div>
 </div>
@@ -47,12 +47,26 @@
 <div class="toast" id="toast"></div>
 
 <nav class="tabbar">
-  <a href="index.html" class="active"><span class="icon">📚</span>Biblioteca</a>
-  <a href="registro.html"><span class="icon">📝</span>Registrar</a>
-  <a href="progreso.html"><span class="icon">📈</span>Progreso</a>
+  <a href="index.html" class="active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.2C4 4.4 4.6 3.8 5.4 3.8H11a1.6 1.6 0 0 1 1.6 1.6v14.8a1.8 1.8 0 0 0-1.8-1.8H4V5.2Z"/><path d="M20 5.2c0-.8-.6-1.4-1.4-1.4H13a1.6 1.6 0 0 0-1.6 1.6v14.8A1.8 1.8 0 0 1 13.2 18.4H20V5.2Z"/></svg>
+    Biblioteca
+  </a>
+  <a href="rutina.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.3"/><path d="M3.5 9.5h17"/><path d="M8 3v3.2M16 3v3.2"/><path d="M7.5 13.2h3M7.5 16.5h3M13.5 13.2h3"/></svg>
+    Rutina
+  </a>
+  <a href="registro.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.2" width="14" height="16.8" rx="2.2"/><path d="M9 4.2v-.6A1.6 1.6 0 0 1 10.6 2h2.8A1.6 1.6 0 0 1 15 3.6v.6"/><path d="M12 10.5v6M9 13.5h6"/></svg>
+    Registrar
+  </a>
+  <a href="progreso.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3.5v15.8c0 .66.54 1.2 1.2 1.2H20.5"/><path d="M7 16l3.6-4.2 3 2.6L18.5 8.4"/></svg>
+    Progreso
+  </a>
 </nav>
 
 <script src="js/config.js"></script>
+<script src="js/translations.js"></script>
 <script>
 let ALL = [];
 let filtroCategoria = "todas";
@@ -79,7 +93,7 @@ function construirChips() {
 
   const catBox = document.getElementById("chips-categoria");
   catBox.innerHTML = categorias.map(c =>
-    `<div class="chip ${c === filtroCategoria ? "active" : ""}" data-cat="${c}">${c}</div>`
+    `<div class="chip ${c === filtroCategoria ? "active" : ""}" data-cat="${c}">${c === "todas" ? "Todas" : tCategoria(c)}</div>`
   ).join("");
   catBox.querySelectorAll(".chip").forEach(chip => {
     chip.addEventListener("click", () => {
@@ -91,7 +105,7 @@ function construirChips() {
 
   const eqBox = document.getElementById("chips-equipo");
   eqBox.innerHTML = equipos.map(eq =>
-    `<div class="chip ${eq === filtroEquipo ? "active" : ""}" data-eq="${eq}">${eq}</div>`
+    `<div class="chip ${eq === filtroEquipo ? "active" : ""}" data-eq="${eq}">${eq === "todos" ? "Todos" : tEquipo(eq)}</div>`
   ).join("");
   eqBox.querySelectorAll(".chip").forEach(chip => {
     chip.addEventListener("click", () => {
@@ -116,7 +130,7 @@ function render() {
       <img src="${e.image_url}" loading="lazy" alt="" />
       <div class="info">
         <div class="name">${e.name}</div>
-        <div class="meta">${e.category} · ${e.equipment}</div>
+        <div class="meta">${tCategoria(e.category)} · ${tEquipo(e.equipment)}</div>
       </div>
     </div>
   `).join("");
@@ -141,7 +155,7 @@ function abrirDetalle(id) {
   ejercicioActual = e;
   document.getElementById("sheet-gif").src = e.gif_url;
   document.getElementById("sheet-name").textContent = e.name;
-  document.getElementById("sheet-tags").innerHTML = [e.category, e.equipment, e.target]
+  document.getElementById("sheet-tags").innerHTML = [tCategoria(e.category), tEquipo(e.equipment), tCategoria(e.target)]
     .filter(Boolean).map(t => `<span class="tag">${t}</span>`).join("");
   const pasos = e.instrucciones && e.instrucciones.length
     ? e.instrucciones

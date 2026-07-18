@@ -5,14 +5,16 @@ App personal de ejercicio: biblioteca de +1300 ejercicios con animaciones e inst
 ## Estructura
 
 ```
-index.html          → Biblioteca de ejercicios (buscar, filtrar, ver gif + instrucciones)
-registro.html        → Registrar la sesión de hoy (series, reps, peso)
-progreso.html        → Ver historial y gráfico de progreso por ejercicio
-css/style.css        → Estilos
-js/config.js         → AQUÍ va la URL de tu Apps Script (paso 3)
-js/api.js            → Lógica para leer/escribir en tu Sheet
-data/exercises_es.json → Dataset de ejercicios (español), basado en hasaneyldrm/exercises-dataset
-apps-script/Code.gs   → Código para pegar en tu Google Sheet
+index.html              → Biblioteca de ejercicios (buscar, filtrar, ver gif + instrucciones)
+rutina.html              → Configurar qué toca cada día de la semana (grupo muscular + ejercicios objetivo)
+registro.html            → Registrar la sesión de hoy (sugiere lo que toca según tu rutina)
+progreso.html            → Calendario de días entrenados + gráfico de progreso por ejercicio
+css/style.css            → Estilos (con íconos SVG propios, sin emoticones)
+js/config.js             → AQUÍ va la URL de tu Apps Script (paso 3)
+js/api.js                → Lógica para leer/escribir en tu Sheet
+js/translations.js       → Traducciones ES de categorías/equipos + helpers de días de la semana
+data/exercises_es.json   → Dataset de ejercicios (español), basado en hasaneyldrm/exercises-dataset
+apps-script/Code.gs      → Código para pegar en tu Google Sheet
 ```
 
 ## Puesta en marcha (15-20 min)
@@ -52,6 +54,12 @@ apps-script/Code.gs   → Código para pegar en tu Google Sheet
 - Ve a **Registrar**, llena reps/peso, y toca "Guardar sesión en mi hoja".
 - Revisa tu Google Sheet: debería aparecer una pestaña "Registros" con la fila nueva.
 - Ve a **Progreso**, selecciona el ejercicio y deberías ver el dato reflejado.
+
+## Novedades: Rutina semanal y Calendario
+
+- **Rutina** (nueva pestaña): define para cada día de la semana si es un día de entrenamiento (ej. "Espalda", "Pierna", "Full body") o de descanso, y qué ejercicios te tocan con series/reps objetivo. Esto se guarda **solo en el navegador de tu celular** (no en el Sheet), así que si cambias de celular o borras datos del navegador tendrás que volver a configurarlo.
+- En **Registrar**, si el día de hoy tiene una rutina asignada (y no es descanso), aparece un banner "Hoy toca: {grupo}" con un botón para cargar automáticamente esos ejercicios a la sesión — solo te queda anotar lo que realmente hiciste.
+- En **Progreso**, el calendario mensual marca en verde los días donde guardaste una sesión. Tócalos para ver qué entrenaste ese día.
 
 ## Notas
 
