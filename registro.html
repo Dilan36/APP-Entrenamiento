@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Registrar — Mi Entrenamiento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="topbar">
+  <div class="container" style="display:flex; justify-content:space-between; align-items:center;">
+    <div>
+      <div class="eyebrow">Hoy</div>
+      <h1 id="fecha-titulo">Registrar sesión</h1>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="search-row">
+    <input type="text" id="search-add" placeholder="Agregar ejercicio a la sesión..." />
+  </div>
+  <div class="ex-list" id="sugerencias"></div>
+
+  <div id="sesion-lista"></div>
+
+  <div class="empty-state" id="sesion-vacia">
+    <div class="big">🏋️</div>
+    Aún no has agregado ejercicios. Búscalos arriba o desde la Biblioteca.
+  </div>
+
+  <div style="margin: 20px 0 40px;">
+    <button class="btn" id="btn-guardar">Guardar sesión en mi hoja</button>
+    <div style="height:8px;"></div>
+    <button class="btn secondary" id="btn-limpiar">Vaciar sesión</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<nav class="tabbar">
+  <a href="index.html"><span class="icon">📚</span>Biblioteca</a>
+  <a href="registro.html" class="active"><span class="icon">📝</span>Registrar</a>
+  <a href="progreso.html"><span class="icon">📈</span>Progreso</a>
+</nav>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script>
+let ALL = [];
+let sesion = JSON.parse(localStorage.getItem("sesion_hoy") || "[]");
+
+const fecha = new Date();
+document.getElementById("fecha-titulo").textContent =
+  "Sesión de hoy · " + fecha.toLocaleDateString("es-ES", { day: "2-digit", month: "short" });
+
+function normaliza(s) {
+  return (s || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+async function cargarDatos() {
+  const res = await fetch("data/exercises_es.json");
+  ALL = await res.json();
+  render();
+}
+
+// --- Buscador para agregar ejercicios sin pasar por la biblioteca ---
+const searchAdd = document.getElementById("search-add");
+const sugerencias = document.getElementById("sugerencias");
+
+searchAdd.addEventListener("input", () => {
+  const q = normaliza(searchAdd.value);
+  if (!q) { sugerencias.innerHTML = ""; return; }
+  const encontrados = ALL.filter(e => normaliza(e.name).includes(q)).slice(0, 6);
+  sugerencias.innerHTML = encontrados.map(e => `
+    <div class="ex-card" data-id="${e.id}">
+      <img src="${e.image_url}" loading="lazy" alt="" />
+      <div class="info">
+        <div class="name">${e.name}</div>
+        <div class="meta">${e.category} · ${e.equipment}</div>
+      </div>
+    </div>
+  `).join("");
+  sugerencias.querySelectorAll(".ex-card").forEach(card => {
+    card.addEventListener("click", () => {
+      agregarEjercicio(card.dataset.id);
+      searchAdd.value = "";
+      sugerencias.innerHTML = "";
+    });
+  });
+});
+
+function agregarEjercicio(id) {
+  const e = ALL.find(x => x.id === id);
+  if (!e) return;
+  if (sesion.find(x => x.id === id)) return;
+  sesion.push({ id: e.id, name: e.name, sets: [{ reps: "", peso: "" }] });
+  guardarLocal();
+  render();
+}
+
+function guardarLocal() {
+  localStorage.setItem("sesion_hoy", JSON.stringify(sesion));
+}
+
+function render() {
+  const cont = document.getElementById("sesion-lista");
+  document.getElementById("sesion-vacia").style.display = sesion.length ? "none" : "block";
+
+  cont.innerHTML = sesion.map((ex, exIdx) => `
+    <div class="card" data-exidx="${exIdx}">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <h3 style="font-size:16px;">${ex.name}</h3>
+        <span class="rm" data-action="quitar-ejercicio" style="color:var(--text-dim); cursor:pointer;">✕</span>
+      </div>
+      <div class="field-label">Series (reps × peso kg)</div>
+      <div class="sets-box">
+        ${ex.sets.map((s, sIdx) => `
+          <div class="set-row" data-setidx="${sIdx}">
+            <div class="set-num">${sIdx + 1}</div>
+            <input type="number" inputmode="numeric" placeholder="reps" value="${s.reps}" data-field="reps" />
+            <input type="number" inputmode="decimal" placeholder="kg" value="${s.peso}" data-field="peso" />
+            <div class="rm" data-action="quitar-serie">✕</div>
+          </div>
+        `).join("")}
+      </div>
+      <button class="btn secondary" data-action="agregar-serie" style="margin-top:6px;">+ Agregar serie</button>
+    </div>
+  `).join("");
+
+  // listeners
+  cont.querySelectorAll(".card").forEach(card => {
+    const exIdx = Number(card.dataset.exidx);
+
+    card.querySelector('[data-action="quitar-ejercicio"]').addEventListener("click", () => {
+      sesion.splice(exIdx, 1);
+      guardarLocal();
+      render();
+    });
+
+    card.querySelector('[data-action="agregar-serie"]').addEventListener("click", () => {
+      sesion[exIdx].sets.push({ reps: "", peso: "" });
+      guardarLocal();
+      render();
+    });
+
+    card.querySelectorAll(".set-row").forEach(row => {
+      const sIdx = Number(row.dataset.setidx);
+      row.querySelectorAll("input").forEach(inp => {
+        inp.addEventListener("input", () => {
+          sesion[exIdx].sets[sIdx][inp.dataset.field] = inp.value;
+          guardarLocal();
+        });
+      });
+      row.querySelector('[data-action="quitar-serie"]').addEventListener("click", () => {
+        sesion[exIdx].sets.splice(sIdx, 1);
+        guardarLocal();
+        render();
+      });
+    });
+  });
+}
+
+document.getElementById("btn-limpiar").addEventListener("click", () => {
+  if (!confirm("¿Vaciar la sesión de hoy? Esto no borra lo ya guardado en tu hoja.")) return;
+  sesion = [];
+  guardarLocal();
+  render();
+});
+
+document.getElementById("btn-guardar").addEventListener("click", guardarSesion);
+
+async function guardarSesion() {
+  if (!apiConfigured()) {
+    alert("Falta configurar la URL de tu Apps Script en js/config.js");
+    return;
+  }
+  if (!sesion.length) {
+    alert("Agrega al menos un ejercicio antes de guardar.");
+    return;
+  }
+
+  const btn = document.getElementById("btn-guardar");
+  btn.disabled = true;
+  btn.textContent = "Guardando...";
+
+  const fechaISO = new Date().toISOString().slice(0, 10);
+  const filas = [];
+  sesion.forEach(ex => {
+    ex.sets.forEach((s, i) => {
+      if (s.reps === "" && s.peso === "") return;
+      filas.push({
+        fecha: fechaISO,
+        ejercicio: ex.name,
+        serie: i + 1,
+        reps: s.reps || "",
+        peso: s.peso || "",
+      });
+    });
+  });
+
+  try {
+    await apiPost("guardarSesion", { filas });
+    mostrarToast("Sesión guardada ✅");
+    sesion = [];
+    guardarLocal();
+    render();
+  } catch (err) {
+    alert("No se pudo guardar: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Guardar sesión en mi hoja";
+  }
+}
+
+function mostrarToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2000);
+}
+
+cargarDatos();
+</script>
+</body>
+</html>
